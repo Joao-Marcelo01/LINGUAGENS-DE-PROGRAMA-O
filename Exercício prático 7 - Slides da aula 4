@@ -1,0 +1,1014 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": []
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "zrMOOGSx3TQi"
+      },
+      "outputs": [],
+      "source": [
+        "import pandas as pd\n",
+        "import numpy as np"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Leia o arquivo vendas_brasil_aula4_kpis.csv em um DataFrame chamado df.\n",
+        "\n",
+        "Depois:\n",
+        "\n",
+        "exiba as primeiras linhas\n",
+        "veja o tamanho da base\n",
+        "inspecione os tipos das colunas\n",
+        "confirme se data_venda está pronta para análises temporais"
+      ],
+      "metadata": {
+        "id": "t-bNx3mdKJPb"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df = pd.read_csv('vendas_brasil_aula4_kpis.csv')\n",
+        "\n",
+        "print(df.head())\n",
+        "print(f'\\nShape: {df.shape}')\n",
+        "print(f'\\nTipos:\\n{df.dtypes}')\n",
+        "print(f'\\nData_venda sample: {df[\"data_venda\"].head(3).tolist()}')\n",
+        "\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "zlDKn67P5UZm",
+        "outputId": "53af3a7e-f1f1-4062-aed2-891373600e55"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "   pedido_id  data_venda  uf  canal_venda    categoria           produto  \\\n",
+            "0       5000  2025-02-14  RJ  Marketplace  Periféricos       Mouse Gamer   \n",
+            "1       5001  2025-02-17  PR       Online  Informática        Monitor 27   \n",
+            "2       5002  2025-07-22  RJ  Marketplace  Informática        Monitor 27   \n",
+            "3       5003  2025-12-08  SP  Marketplace  Periféricos  Teclado Mecânico   \n",
+            "4       5004  2025-01-04  GO  Marketplace    Telefonia      Smartphone X   \n",
+            "\n",
+            "   quantidade_pedidos  preco_unitario   receita    lucro  \n",
+            "0                   2          237.65    475.30   239.08  \n",
+            "1                   4         1431.79   5727.16  1769.48  \n",
+            "2                   5         1446.22   7231.10  2449.85  \n",
+            "3                   7          399.84   2798.88  1356.67  \n",
+            "4                   4         3134.85  12539.40  3656.84  \n",
+            "\n",
+            "Shape: (420, 10)\n",
+            "\n",
+            "Tipos:\n",
+            "pedido_id               int64\n",
+            "data_venda             object\n",
+            "uf                     object\n",
+            "canal_venda            object\n",
+            "categoria              object\n",
+            "produto                object\n",
+            "quantidade_pedidos      int64\n",
+            "preco_unitario        float64\n",
+            "receita               float64\n",
+            "lucro                 float64\n",
+            "dtype: object\n",
+            "\n",
+            "Data_venda sample: ['2025-02-14', '2025-02-17', '2025-07-22']\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "\n",
+        "1. exiba as primeiras linhas\n",
+        "O DataFrame exibe pedidos com 10 colunas: pedido_id, data_venda, uf, canal_venda, categoria, produto, quantidade_pedidos, preco_unitario, receita e lucro.\n",
+        "2. veja o tamanho da base\n",
+        "A base possui 420 linhas e 10 colunas.\n",
+        "3. inspecione os tipos das colunas\n",
+        "pedido_id e quantidade_pedidos são int64; preco_unitario, receita e lucro são float64; data_venda, uf, canal_venda, categoria e produto são object (string).\n",
+        "4. confirme se data_venda está pronta para análises temporais\n",
+        "Não está. O dtype retorna object — é uma string. É necessário converter com pd.to_datetime() antes de extrair mês, trimestre ou ano."
+      ],
+      "metadata": {
+        "id": "ydImxISdKima"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "\n",
+        "1. Qual canal de venda é o mais eficiente?\n",
+        "O canal Online apresenta a maior margem média (35,3%), sendo o mais eficiente — mesmo tendo o menor volume de pedidos entre os três canais.\n",
+        "2. Qual categoria parece mais rentável?\n",
+        "Telefonia e Informática lideram em lucro absoluto (~R$ 220k cada), mas Periféricos e Áudio têm as melhores margens (43% e 41%). Depende se \"rentável\" é volume ou eficiência.\n",
+        "3. Quais produtos são os campeões por lucro?\n",
+        "Notebook Pro (R$ 153k), Smartphone X (R$ 118k) e Tablet Plus (R$ 101k) — juntos respondem por 68% do lucro total.\n",
+        "4. O negócio está crescendo ao longo do tempo?\n",
+        "Não de forma linear. O Q4 (out–dez) concentra os melhores resultados, com novembro sendo o mês de pico. O crescimento parece sazonal, não contínuo.\n",
+        "5. Quais KPIs globais resumem melhor a operação?\n",
+        "Receita Total (R$ 1,92M), Lucro Total (R$ 544k), Margem de Lucro (28,34%) e Ticket Médio (R$ 4.575)."
+      ],
+      "metadata": {
+        "id": "k_yBYuE8K7Mm"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Com base nas \"4 Métricas de Ouro do Varejo\" apresentadas na aula, calcule os seguintes KPIs globais da base inteira:\n",
+        "\n",
+        "Receita Total\n",
+        "Lucro Total\n",
+        "Margem de Lucro (%)\n",
+        "Ticket Médio"
+      ],
+      "metadata": {
+        "id": "IaHyCMw4LK2d"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "receita_total = df['receita'].sum()\n",
+        "lucro_total   = df['lucro'].sum()\n",
+        "margem_global = lucro_total / receita_total * 100\n",
+        "ticket_medio  = receita_total / df['pedido_id'].count()\n",
+        "\n",
+        "kpis = pd.DataFrame({\n",
+        "    'KPI':   ['Receita Total', 'Lucro Total', 'Margem de Lucro (%)', 'Ticket Médio'],\n",
+        "    'Valor': [f'R$ {receita_total:,.2f}',\n",
+        "              f'R$ {lucro_total:,.2f}',\n",
+        "              f'{margem_global:.2f}%',\n",
+        "              f'R$ {ticket_medio:,.2f}']\n",
+        "})\n",
+        "print(kpis.to_string(index=False))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "PpbsdpJ3AqpH",
+        "outputId": "6e925a70-5f2b-4c34-8e09-1c6dd263e622"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "                KPI           Valor\n",
+            "      Receita Total R$ 1,921,492.22\n",
+            "        Lucro Total   R$ 544,496.15\n",
+            "Margem de Lucro (%)          28.34%\n",
+            "       Ticket Médio     R$ 4,574.98\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "O negócio parece grande ou pequeno?\n",
+        "Parece de porte médio no varejo digital brasileiro — quase R$ 2 milhões de receita em 420 pedidos ao longo de um ano.\n",
+        "\n",
+        "O lucro acompanha bem a receita?\n",
+        "Sim. Uma margem de 28,34% é saudável para o varejo de eletrônicos, onde margens entre 20–35% são consideradas competitivas.\n",
+        "\n",
+        "O ticket médio sugere compras de maior valor ou de menor valor?\n",
+        "De maior valor. Um ticket de R$ 4.575 indica que os clientes compram predominantemente produtos de tecnologia de alto custo, como notebooks, smartphones e monitores."
+      ],
+      "metadata": {
+        "id": "x42wMzeELZAK"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Métricas derivadas\n",
+        "A aula mostra que somar valores não basta. Precisamos criar métricas derivadas para avaliar eficiência e comportamento.\n",
+        "\n",
+        "Tarefa\n",
+        "uma coluna de margem_lucro (lucro / receita)\n",
+        "uma lógica para ticket_medio da operação ou por grupo\n",
+        "Reflexão\n",
+        "Por que receita alta não significa automaticamente melhor desempenho?\n",
+        "Em que situação a margem ajuda mais do que a receita bruta?"
+      ],
+      "metadata": {
+        "id": "K8-rK-XRLuWQ"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df['data_venda']  = pd.to_datetime(df['data_venda'])\n",
+        "df['margem_lucro'] = df['lucro'] / df['receita']\n",
+        "\n",
+        "ticket_medio_geral = df['receita'].sum() / df['pedido_id'].count()\n",
+        "\n",
+        "print(df[['receita', 'lucro', 'margem_lucro']].head())\n",
+        "print(f'\\nTicket Médio Geral: R$ {ticket_medio_geral:,.2f}')"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "yuAkWYnAL1nP",
+        "outputId": "120ae931-c0e9-49d1-8b1c-750881ad4303"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "    receita    lucro  margem_lucro\n",
+            "0    475.30   239.08      0.503009\n",
+            "1   5727.16  1769.48      0.308963\n",
+            "2   7231.10  2449.85      0.338794\n",
+            "3   2798.88  1356.67      0.484719\n",
+            "4  12539.40  3656.84      0.291628\n",
+            "\n",
+            "Ticket Médio Geral: R$ 4,574.98\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "1. Por que receita alta não significa automaticamente melhor desempenho?\n",
+        "Porque os custos podem ser igualmente altos. Um produto pode faturar muito e ainda assim gerar pouco lucro se as despesas consumirem quase toda a receita. O desempenho real está na eficiência — o quanto sobra de cada real faturado.\n",
+        "\n",
+        "2. Em que situação a margem ajuda mais do que a receita bruta?\n",
+        "Quando se quer comparar eficiência entre produtos, canais ou categorias de tamanhos diferentes. Uma categoria com receita menor, mas margem de 43%, pode ser mais estratégica do que outra com alta receita e margem de 25% — pois retém mais valor por real vendido."
+      ],
+      "metadata": {
+        "id": "xIj-mxZvMOSU"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Fatiando a realidade: análise por dimensão\n",
+        "A aula mostra que um KPI isolado não decide nada. É preciso perguntar: como isso varia por canal, categoria, região e tempo?\n",
+        "\n",
+        "Tarefa\n",
+        "Liste, em markdown, quais colunas do dataset representam:\n",
+        "\n",
+        "métrica\n",
+        "dimensão\n",
+        "tempo"
+      ],
+      "metadata": {
+        "id": "LPjLTkI8MXLC"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Métricas (o que se mede)\n",
+        "receita, lucro, preco_unitario, quantidade_pedidos — e margem_lucro como métrica derivada.\n",
+        "\n",
+        "Dimensões (como se fatia)\n",
+        "canal_venda, categoria, uf, produto.\n",
+        "\n",
+        "Tempo (quando ocorreu)\n",
+        "data_venda — a partir da qual derivamos mês, trimestre e ano."
+      ],
+      "metadata": {
+        "id": "QaWfmuNpMiMA"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        " Análise por canal\n",
+        "Pergunta de negócio\n",
+        "Qual canal de venda é o mais eficiente?\n",
+        "\n",
+        "Tarefa\n",
+        "Crie uma tabela agregada por canal_venda contendo, no mínimo:\n",
+        "\n",
+        "Receita Total\n",
+        "Lucro Total\n",
+        "Margem Média ou Margem Calculada\n",
+        "Quantidade de pedidos\n",
+        "Ticket Médio\n",
+        "Depois responda\n",
+        "Qual canal gera mais receita?\n",
+        "Qual canal gera maior eficiência?\n",
+        "Se você fosse gestor, priorizaria volume ou margem?"
+      ],
+      "metadata": {
+        "id": "39Pv-RE0Mqlz"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "canal = df.groupby('canal_venda').agg(\n",
+        "    receita_total = ('receita', 'sum'),\n",
+        "    lucro_total   = ('lucro', 'sum'),\n",
+        "    margem_media  = ('margem_lucro', 'mean'),\n",
+        "    qtd_pedidos   = ('pedido_id', 'count')\n",
+        ").reset_index()\n",
+        "\n",
+        "canal['ticket_medio'] = canal['receita_total'] / canal['qtd_pedidos']\n",
+        "canal = canal.sort_values('receita_total', ascending=False)\n",
+        "print(canal.round(2).to_string(index=False))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "tBkSSN9dMxwx",
+        "outputId": "30ee81a3-32ed-4031-97f5-8d8a09ce1366"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "canal_venda  receita_total  lucro_total  margem_media  qtd_pedidos  ticket_medio\n",
+            "Marketplace      657802.09    185802.57          0.35          141       4665.26\n",
+            "Loja Física      640797.06    174583.16          0.34          143       4481.10\n",
+            "     Online      622893.07    184110.42          0.35          136       4580.10\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "1. Qual canal gera mais receita?\n",
+        "Marketplace lidera com R$ 657.802, seguido por Loja Física (R$ 640.797) e Online (R$ 622.893). A diferença entre os três é pequena — menos de 6% separa o primeiro do último.\n",
+        "2. Qual canal gera maior eficiência?\n",
+        "O canal Online, com margem média de 35,3% — a mais alta entre os três canais, mesmo tendo o menor volume de pedidos (136).\n",
+        "3. Se você fosse gestor, priorizaria volume ou margem?\n",
+        "Margem. O canal Online entrega mais lucro por pedido sem exigir estrutura física. Investir em conversão digital é mais escalável e menos custoso do que expandir lojas físicas, que carregam alto custo fixo."
+      ],
+      "metadata": {
+        "id": "0JxMyE8-M8ZM"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Os três canais operam com receita equilibrada, mas o Online apresenta margem superior (35,3%) com menos pedidos — indicando maior qualidade de venda. Recomenda-se priorizar investimento em performance digital antes de expandir a rede física."
+      ],
+      "metadata": {
+        "id": "4yxWJKWKNFqa"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Análise por categoria\n",
+        "Pergunta de negócio\n",
+        "Qual categoria é mais lucrativa e qual parece mais eficiente?\n",
+        "\n",
+        "Tarefa\n",
+        "Crie uma tabela agregada por categoria com:\n",
+        "\n",
+        "Receita Total\n",
+        "Lucro Total\n",
+        "Margem\n",
+        "Ticket Médio\n",
+        "Depois responda\n",
+        "A categoria de maior receita também é a de maior margem?\n",
+        "Existe alguma categoria que parece vender bem, mas ser pouco eficiente?"
+      ],
+      "metadata": {
+        "id": "KmQMLk-qNOVy"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "cat = df.groupby('categoria').agg(\n",
+        "    receita_total = ('receita', 'sum'),\n",
+        "    lucro_total   = ('lucro', 'sum'),\n",
+        "    margem_media  = ('margem_lucro', 'mean'),\n",
+        "    qtd_pedidos   = ('pedido_id', 'count')\n",
+        ").reset_index()\n",
+        "\n",
+        "cat['ticket_medio'] = cat['receita_total'] / cat['qtd_pedidos']\n",
+        "cat = cat.sort_values('lucro_total', ascending=False)\n",
+        "print(cat.round(2).to_string(index=False))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "OKpd2Lo0NPrw",
+        "outputId": "57d673d3-0f0d-4db8-fa61-17ca5871a227"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "  categoria  receita_total  lucro_total  margem_media  qtd_pedidos  ticket_medio\n",
+            "  Telefonia      866292.45    219975.58          0.25          109       7947.64\n",
+            "Informática      805376.44    219090.15          0.29           93       8659.96\n",
+            "      Áudio      132900.25     55006.02          0.41          111       1197.30\n",
+            "Periféricos      116923.08     50424.40          0.43          107       1092.74\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "1. A categoria de maior receita também é a de maior margem?\n",
+        "Não. Telefonia lidera em receita (R$ 866k) e lucro absoluto (R$ 220k), mas tem a pior margem da base (25,4%). Periféricos, com receita muito menor (R$ 117k), apresenta a melhor margem: 43,1%.\n",
+        "2. Existe alguma categoria que parece vender bem, mas ser pouco eficiente?\n",
+        "Sim, Telefonia. Apesar de ser a maior em faturamento, sua margem de 25% indica custos elevados. Vale investigar se descontos agressivos ou alto custo de aquisição estão comprimindo a rentabilidade nessa linha."
+      ],
+      "metadata": {
+        "id": "D_djrOJTNW4f"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        " Análise por região (UF)\n",
+        "Pergunta de negócio\n",
+        "Quais UFs concentram a operação?\n",
+        "\n",
+        "Tarefa\n",
+        "Monte uma tabela por uf com:\n",
+        "\n",
+        "Receita Total\n",
+        "Lucro Total\n",
+        "Participação percentual da receita\n",
+        "Ticket Médio\n",
+        "Depois responda\n",
+        "Quais UFs concentram maior receita?\n",
+        "Existe concentração regional?\n",
+        "Se fosse necessário expandir ou reforçar logística, por onde você começaria?"
+      ],
+      "metadata": {
+        "id": "y8uDJUKxNebp"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "uf = df.groupby('uf').agg(\n",
+        "    receita_total = ('receita', 'sum'),\n",
+        "    lucro_total   = ('lucro', 'sum'),\n",
+        "    qtd_pedidos   = ('pedido_id', 'count')\n",
+        ").reset_index()\n",
+        "\n",
+        "uf['ticket_medio'] = uf['receita_total'] / uf['qtd_pedidos']\n",
+        "uf['perc_receita'] = uf['receita_total'] / uf['receita_total'].sum() * 100\n",
+        "uf = uf.sort_values('receita_total', ascending=False)\n",
+        "print(uf.round(2).to_string(index=False))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "9RX5ENbVNjq4",
+        "outputId": "db2af90d-7583-4f08-cafc-bdcdb1052173"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "uf  receita_total  lucro_total  qtd_pedidos  ticket_medio  perc_receita\n",
+            "SP      246835.50     71022.16           48       5142.41         12.85\n",
+            "RJ      218631.91     63960.39           38       5753.47         11.38\n",
+            "PE      208457.44     58183.95           55       3790.14         10.85\n",
+            "MG      207614.69     61122.25           44       4718.52         10.80\n",
+            "SC      198143.47     60272.32           40       4953.59         10.31\n",
+            "RS      187048.31     49795.96           43       4349.96          9.73\n",
+            "ES      181113.70     49838.07           39       4643.94          9.43\n",
+            "PR      174136.19     46155.64           35       4975.32          9.06\n",
+            "BA      157082.99     42117.30           42       3740.07          8.18\n",
+            "GO      142428.02     42028.11           36       3956.33          7.41\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "1. Quais UFs concentram maior receita?\n",
+        "SP (12,8%) e RJ (11,4%) lideram. PE e MG aparecem em seguida com ~10,8% cada. Os quatro estados juntos somam cerca de 46% da receita total.\n",
+        "2. Existe concentração regional?\n",
+        "Moderada. O Sudeste (SP, RJ, MG, ES) responde por ~43% da receita. Os demais estados têm participações distribuídas — nenhum ultrapassa 13% individualmente.\n",
+        "3. Se fosse necessário expandir ou reforçar logística, por onde você começaria?\n",
+        "Por PE, que aparece em 3º lugar em receita mas tem o menor ticket médio entre os top 5 (R$ 3.790). Isso sugere alta demanda com produtos de menor valor — um hub logístico no Nordeste poderia reduzir fretes e estimular compras de maior valor na região."
+      ],
+      "metadata": {
+        "id": "Bb8KIAcHNrDp"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        " O motor da análise: agregações (groupby)\n",
+        "Nos slides, a lógica central é:\n",
+        "\n",
+        "receita -> sum\n",
+        "margem -> mean ou cálculo derivado\n",
+        "produto -> count\n",
+        "Tarefa\n",
+        "Escolha duas dimensões diferentes e construa tabelas agregadas mostrando que você entendeu essa lógica. Exemplos: por canal, por categoria, por UF, por mês."
+      ],
+      "metadata": {
+        "id": "KWFfCAyvNvvo"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(\"=== Por Canal ===\")\n",
+        "print(df.groupby('canal_venda').agg(\n",
+        "    receita   = ('receita',      'sum'),\n",
+        "    margem    = ('margem_lucro', 'mean'),\n",
+        "    n_pedidos = ('pedido_id',    'count')\n",
+        ").round(3).to_string())\n",
+        "\n",
+        "# Dimensão 2: por categoria\n",
+        "print(\"\\n=== Por Categoria ===\")\n",
+        "print(df.groupby('categoria').agg(\n",
+        "    receita   = ('receita',      'sum'),\n",
+        "    margem    = ('margem_lucro', 'mean'),\n",
+        "    n_pedidos = ('pedido_id',    'count')\n",
+        ").round(3).to_string())"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "ecXfBdYXN12g",
+        "outputId": "8d475d9a-eb96-4375-a318-66ae300a68bc"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "=== Por Canal ===\n",
+            "               receita  margem  n_pedidos\n",
+            "canal_venda                              \n",
+            "Loja Física  640797.06   0.345        143\n",
+            "Marketplace  657802.09   0.347        141\n",
+            "Online       622893.07   0.353        136\n",
+            "\n",
+            "=== Por Categoria ===\n",
+            "               receita  margem  n_pedidos\n",
+            "categoria                                \n",
+            "Informática  805376.44   0.287         93\n",
+            "Periféricos  116923.08   0.431        107\n",
+            "Telefonia    866292.45   0.254        109\n",
+            "Áudio        132900.25   0.412        111\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Campeões e vilões (Top N)\n",
+        "A aula destaca o poder dos rankings curtos e focados.\n",
+        "\n",
+        "Tarefa\n",
+        "Top 10 produtos por lucro\n",
+        "Top 10 produtos por receita\n",
+        "5 categorias ou UFs com pior margem ou pior desempenho\n",
+        "Perguntas\n",
+        "Quem são os \"campeões\"?\n",
+        "Quem são os \"vilões\"?\n",
+        "Que ação tática poderia ser tomada com base nisso?"
+      ],
+      "metadata": {
+        "id": "pZX5hwYdOBdn"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "top_prod = df.groupby('produto').agg(\n",
+        "    lucro_total   = ('lucro',   'sum'),\n",
+        "    receita_total = ('receita', 'sum')\n",
+        ").reset_index()\n",
+        "\n",
+        "print(\"=== TOP 10 POR LUCRO ===\")\n",
+        "print(top_prod.sort_values('lucro_total', ascending=False).head(10).to_string(index=False))\n",
+        "\n",
+        "print(\"\\n=== TOP 10 POR RECEITA ===\")\n",
+        "print(top_prod.sort_values('receita_total', ascending=False).head(10).to_string(index=False))\n",
+        "\n",
+        "print(\"\\n=== 5 CATEGORIAS COM PIOR MARGEM ===\")\n",
+        "pior = df.groupby('categoria').agg(\n",
+        "    margem_media = ('margem_lucro', 'mean')\n",
+        ").reset_index()\n",
+        "print(pior.sort_values('margem_media').head(5).round(3).to_string(index=False))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "P2jOmW4EOHKB",
+        "outputId": "31a38433-8f9b-4791-9700-40b0a03862bf"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "=== TOP 10 POR LUCRO ===\n",
+            "         produto  lucro_total  receita_total\n",
+            "    Notebook Pro    153094.84      594132.74\n",
+            "    Smartphone X    118198.25      489572.08\n",
+            "     Tablet Plus    101777.33      376720.37\n",
+            "      Monitor 27     65995.31      211243.70\n",
+            "Teclado Mecânico     33939.07       79973.75\n",
+            "    Caixa de Som     28316.37       68956.76\n",
+            "     Headset Pro     26689.65       63943.49\n",
+            "     Mouse Gamer     16485.33       36949.33\n",
+            "\n",
+            "=== TOP 10 POR RECEITA ===\n",
+            "         produto  lucro_total  receita_total\n",
+            "    Notebook Pro    153094.84      594132.74\n",
+            "    Smartphone X    118198.25      489572.08\n",
+            "     Tablet Plus    101777.33      376720.37\n",
+            "      Monitor 27     65995.31      211243.70\n",
+            "Teclado Mecânico     33939.07       79973.75\n",
+            "    Caixa de Som     28316.37       68956.76\n",
+            "     Headset Pro     26689.65       63943.49\n",
+            "     Mouse Gamer     16485.33       36949.33\n",
+            "\n",
+            "=== 5 CATEGORIAS COM PIOR MARGEM ===\n",
+            "  categoria  margem_media\n",
+            "  Telefonia         0.254\n",
+            "Informática         0.287\n",
+            "      Áudio         0.412\n",
+            "Periféricos         0.431\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "1. Quem são os \"campeões\"?\n",
+        "Notebook Pro (R$ 153k de lucro), Smartphone X (R$ 118k) e Tablet Plus (R$ 101k). Esses três produtos respondem juntos por 68% do lucro total e lideram também em receita.\n",
+        "2. Quem são os \"vilões\"?\n",
+        "Em margem, Telefonia (25,4%) e Informática (28,7%) são as categorias menos eficientes. Apesar de liderarem em receita, retêm menos valor por real vendido do que Áudio e Periféricos.\n",
+        "3. Que ação tática poderia ser tomada com base nisso?\n",
+        "Concentrar campanhas nos três produtos campeões para aumentar volume com boa margem. Para Telefonia e Informática, revisar precificação ou renegociar fornecedores. Para Áudio e Periféricos, investigar se é possível escalar o volume — a eficiência já está comprovada."
+      ],
+      "metadata": {
+        "id": "RuySMJeuOOoK"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Análise temporal\n",
+        "A aula reforça que sem tempo a análise fica estática.\n",
+        "\n",
+        "Tarefa\n",
+        "Converta data_venda para data, se necessário\n",
+        "Crie colunas auxiliares como: mês / trimestre (opcional)\n",
+        "Gere uma tabela agregada por mês com: receita, lucro, ticket médio ou margem\n",
+        "Depois responda\n",
+        "O lucro parece crescer ao longo do tempo?\n",
+        "O último trimestre foi melhor que o anterior?\n",
+        "Quais meses concentram as vendas de fim de ano?"
+      ],
+      "metadata": {
+        "id": "4YCzINCqOVwb"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df['mes']       = df['data_venda'].dt.to_period('M')\n",
+        "df['trimestre'] = df['data_venda'].dt.to_period('Q')\n",
+        "\n",
+        "temporal = df.groupby('mes').agg(\n",
+        "    receita_total = ('receita',      'sum'),\n",
+        "    lucro_total   = ('lucro',        'sum'),\n",
+        "    ticket_medio  = ('receita',      'mean'),\n",
+        "    margem_media  = ('margem_lucro', 'mean')\n",
+        ").reset_index()\n",
+        "\n",
+        "print(temporal.round(2).to_string(index=False))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "u17qiTMbOcLE",
+        "outputId": "42935808-71fb-4f10-f456-6be1edbe04e9"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "    mes  receita_total  lucro_total  ticket_medio  margem_media\n",
+            "2025-01      161571.89     46515.14       4251.89          0.35\n",
+            "2025-02      108587.03     29998.87       3502.81          0.35\n",
+            "2025-03       87902.22     23923.66       3516.09          0.34\n",
+            "2025-04      148930.46     43094.00       3463.50          0.34\n",
+            "2025-05      106355.17     30334.32       4624.14          0.33\n",
+            "2025-06      134685.83     38592.70       4081.39          0.35\n",
+            "2025-07      196651.96     57913.44       5959.15          0.34\n",
+            "2025-08      160240.62     45881.36       4330.83          0.34\n",
+            "2025-09      109291.03     31938.44       3311.85          0.36\n",
+            "2025-10      158226.19     41463.02       4653.71          0.33\n",
+            "2025-11      325537.31     87763.18       7398.58          0.33\n",
+            "2025-12      223512.51     67078.02       4858.97          0.38\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "1. O lucro parece crescer ao longo do tempo?\n",
+        "Não de forma linear. O ano apresenta altos e baixos mensais sem tendência contínua. O padrão é sazonal: meses como março (R$ 23k) e fevereiro (R$ 30k) são fracos, enquanto novembro (R$ 87k) e dezembro (R$ 67k) são os mais fortes.\n",
+        "2. O último trimestre foi melhor que o anterior?\n",
+        "Sim. O Q4 (out–dez) totalizou R$ 706k em receita e R$ 196k em lucro, superando o Q3 (jul–set) com R$ 466k e R$ 135k — diferença de mais de 50% em receita.\n",
+        "3. Quais meses concentram as vendas de fim de ano?\n",
+        "Novembro e dezembro juntos representam R$ 549k em receita — cerca de 28% do faturamento anual inteiro. Novembro foi o maior mês em receita e lucro; dezembro apresentou a melhor margem do ano (37,9%)."
+      ],
+      "metadata": {
+        "id": "yFY3l5vvOjAV"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Fluxo de investigação do analista\n",
+        "A aula apresenta a sequência: Pergunta → Colunas necessárias → Tipo de resposta/gráfico.\n",
+        "\n",
+        "Tarefa\n",
+        "Preencha, em markdown, pelo menos 3 exemplos no formato:\n",
+        "\n",
+        "Pergunta de negócio: ...\n",
+        "Colunas necessárias: ...\n",
+        "Métrica/KPI: ...\n",
+        "Tipo de resposta esperada: tabela, ranking, tendência etc."
+      ],
+      "metadata": {
+        "id": "9pooDGZGOowj"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Exemplo 1\n",
+        "Pergunta de negócio: Qual canal gera mais receita?\n",
+        "Colunas necessárias: canal_venda, receita\n",
+        "Métrica/KPI: Receita Total (sum)\n",
+        "Tipo de resposta esperada: Tabela ranking por canal\n",
+        "Exemplo 2\n",
+        "Pergunta de negócio: O negócio está crescendo ao longo do tempo?\n",
+        "Colunas necessárias: data_venda, receita, lucro\n",
+        "Métrica/KPI: Receita e lucro mensais (sum)\n",
+        "Tipo de resposta esperada: Tendência temporal — tabela ou gráfico de linha\n",
+        "Exemplo 3\n",
+        "Pergunta de negócio: Quais produtos são mais lucrativos?\n",
+        "Colunas necessárias: produto, lucro\n",
+        "Métrica/KPI: Lucro Total (sum)\n",
+        "Tipo de resposta esperada: Ranking Top 10 — tabela ordenada decrescente"
+      ],
+      "metadata": {
+        "id": "Mnx6r27GOteZ"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "O insight exige palavras\n",
+        "Segundo a aula, o mercado valoriza quem comunica decisões, não apenas quem roda código.\n",
+        "\n",
+        "Tarefa\n",
+        "Escolha duas tabelas agregadas que você criou e escreva, para cada uma, 1 ou 2 frases de interpretação executiva.\n",
+        "\n",
+        "Exemplo de estilo: \"O canal X concentra maior volume de receita, mas o canal Y apresenta margem superior.\" / \"Recomenda-se revisar custos/expansão/priorização com base nesse resultado.\""
+      ],
+      "metadata": {
+        "id": "5FPdKMh-Oy-_"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Tabela 1 — Análise por Canal\n",
+        "O canal Online concentra a maior margem média (35,3%) com o menor volume de pedidos — indicando que ele converte vendas de maior valor com menor custo operacional. Recomenda-se aumentar o investimento em aquisição digital antes de expandir a estrutura de Loja Física.\n",
+        "Tabela 2 — Análise por Categoria\n",
+        "Telefonia lidera em receita absoluta, mas apresenta a pior margem da operação (25,4%), enquanto Periféricos e Áudio operam com eficiência superior a 41%. A estratégia de crescimento deveria avaliar o escalonamento das categorias mais eficientes em vez de concentrar esforços apenas nas de maior volume."
+      ],
+      "metadata": {
+        "id": "fdZ-OtAFO4NV"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        ". Case Varejo Brasil — Entrega final\n",
+        "A aula propõe quatro entregas centrais para o gestor.\n",
+        "\n",
+        "Sua missão final\n",
+        "Organize o notebook para entregar:\n",
+        "\n",
+        "KPIs Globais\n",
+        "Tabelas por Dimensões Críticas — por canal e por categoria\n",
+        "Top 10 Produtos por Lucro\n",
+        "Conclusão final com pelo menos uma decisão tática\n",
+        "A conclusão final deve ser escrita em linguagem clara, direta e orientada à decisão."
+      ],
+      "metadata": {
+        "id": "Oep82L9_PAV3"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(\"==== 1. KPIs GLOBAIS ====\")\n",
+        "print(kpis.to_string(index=False))\n",
+        "\n",
+        "print(\"\\n==== 2. POR CANAL ====\")\n",
+        "print(canal[['canal_venda','receita_total','lucro_total','margem_media']].round(2).to_string(index=False))\n",
+        "\n",
+        "print(\"\\n==== 2. POR CATEGORIA ====\")\n",
+        "print(cat[['categoria','receita_total','lucro_total','margem_media']].round(2).to_string(index=False))\n",
+        "\n",
+        "print(\"\\n==== 3. TOP 10 PRODUTOS POR LUCRO ====\")\n",
+        "print(top_prod.sort_values('lucro_total', ascending=False).head(10).to_string(index=False))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "TpahX0tHPGpR",
+        "outputId": "91490018-b95f-49a6-dc45-399b30e77503"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "==== 1. KPIs GLOBAIS ====\n",
+            "                KPI           Valor\n",
+            "      Receita Total R$ 1,921,492.22\n",
+            "        Lucro Total   R$ 544,496.15\n",
+            "Margem de Lucro (%)          28.34%\n",
+            "       Ticket Médio     R$ 4,574.98\n",
+            "\n",
+            "==== 2. POR CANAL ====\n",
+            "canal_venda  receita_total  lucro_total  margem_media\n",
+            "Marketplace      657802.09    185802.57          0.35\n",
+            "Loja Física      640797.06    174583.16          0.34\n",
+            "     Online      622893.07    184110.42          0.35\n",
+            "\n",
+            "==== 2. POR CATEGORIA ====\n",
+            "  categoria  receita_total  lucro_total  margem_media\n",
+            "  Telefonia      866292.45    219975.58          0.25\n",
+            "Informática      805376.44    219090.15          0.29\n",
+            "      Áudio      132900.25     55006.02          0.41\n",
+            "Periféricos      116923.08     50424.40          0.43\n",
+            "\n",
+            "==== 3. TOP 10 PRODUTOS POR LUCRO ====\n",
+            "         produto  lucro_total  receita_total\n",
+            "    Notebook Pro    153094.84      594132.74\n",
+            "    Smartphone X    118198.25      489572.08\n",
+            "     Tablet Plus    101777.33      376720.37\n",
+            "      Monitor 27     65995.31      211243.70\n",
+            "Teclado Mecânico     33939.07       79973.75\n",
+            "    Caixa de Som     28316.37       68956.76\n",
+            "     Headset Pro     26689.65       63943.49\n",
+            "     Mouse Gamer     16485.33       36949.33\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Conclusão final\n",
+        "Os três produtos campeões (Notebook Pro, Smartphone X e Tablet Plus) geram 68% do lucro da operação — qualquer interrupção no abastecimento ou na margem desses itens impacta diretamente o resultado. A decisão tática imediata é garantir estoque prioritário e precificação estável para esses três produtos, enquanto se revisam os custos nas categorias de Telefonia e Informática, que possuem alta receita mas margens abaixo da média da operação."
+      ],
+      "metadata": {
+        "id": "DrB5sCXRPQ7s"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Desafio extra (opcional)\n",
+        "Monte uma pequena tabela executiva final com: Receita Total, Lucro Total, Margem e Ticket Médio.\n",
+        "\n",
+        "Depois crie uma segunda tabela por canal com os mesmos indicadores.\n",
+        "\n",
+        "Compare os resultados e explique: o KPI global esconde alguma diferença importante entre os canais?"
+      ],
+      "metadata": {
+        "id": "J3RsepLsPYBa"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "global_df = pd.DataFrame([{\n",
+        "    'dimensao':      'TOTAL GERAL',\n",
+        "    'receita_total': receita_total,\n",
+        "    'lucro_total':   lucro_total,\n",
+        "    'margem':        margem_global / 100,\n",
+        "    'ticket_medio':  ticket_medio\n",
+        "}])\n",
+        "\n",
+        "# Tabela por canal\n",
+        "canal_extra = df.groupby('canal_venda').agg(\n",
+        "    receita_total = ('receita',      'sum'),\n",
+        "    lucro_total   = ('lucro',        'sum'),\n",
+        "    margem        = ('margem_lucro', 'mean'),\n",
+        "    ticket_medio  = ('receita',      'mean')\n",
+        ").reset_index().rename(columns={'canal_venda': 'dimensao'})\n",
+        "\n",
+        "resultado = pd.concat([global_df, canal_extra], ignore_index=True)\n",
+        "print(resultado.round(3).to_string(index=False))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "ougJmaqPPdUw",
+        "outputId": "ebbdc2dd-0a04-4f59-901f-ea07f19112bb"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "   dimensao  receita_total  lucro_total  margem  ticket_medio\n",
+            "TOTAL GERAL     1921492.22    544496.15   0.283      4574.981\n",
+            "Loja Física      640797.06    174583.16   0.345      4481.098\n",
+            "Marketplace      657802.09    185802.57   0.347      4665.263\n",
+            "     Online      622893.07    184110.42   0.353      4580.096\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Compare os resultados e explique\n",
+        "Sim, o KPI global esconde diferenças importantes. A margem consolidada de 28,3% está abaixo da margem real de cada canal individualmente (~34–35%). Isso acontece porque o KPI global é ponderado pelo mix de produtos e pela receita total — não é a média simples dos canais. A visão consolidada pode dar a falsa impressão de que a operação é menos eficiente do que realmente é em cada ponto de venda. Sempre que possível, o gestor deve analisar os KPIs fatiados por dimensão, não apenas o número consolidado."
+      ],
+      "metadata": {
+        "id": "6obPB-tHPmLD"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [],
+      "metadata": {
+        "id": "ubll83IwM6D8"
+      }
+    }
+  ]
+}
